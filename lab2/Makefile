@@ -1,7 +1,7 @@
 TARGET = lab2
 
 CC = g++
-CFLAGS = -Wall -O2
+CFLAGS = -Wall -O2 -Werror -Wextra
 
 LIBS = -lGL -lGLU -lglut
 
