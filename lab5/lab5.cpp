@@ -1,9 +1,9 @@
 #include <GL/glut.h>
 #include <cmath>
+
 /*
-	Вариант 16С: треангулировать Целиндр, настроить свет и отрисовать
+    Вариант 16С: треангулировать Цилиндр, настроить свет и отрисовать
 */
-// Координаты вершин трапеции (в плоскости Z = 0)
 
 // Направление света
 GLfloat lightDir[] = {0.0f, 0.0f, 1.0f, 0.0f};
@@ -51,48 +51,102 @@ void drawAxes() {
     glEnable(GL_LIGHTING);  // Включаем освещение обратно
 }
 
-void drawCircleManualTriangulation(float radius, int segments) {
-	glDisable(GL_LIGHTING);
-	glColor3f(1.0,0.5f,0.0f);
+// Функция для вычисления нормали на основе трёх точек
+void calculateNormal(float x1, float y1, float z1, 
+                     float x2, float y2, float z2, 
+                     float x3, float y3, float z3, 
+                     float &nx, float &ny, float &nz) {
+    // Векторы AB и AC
+    float ax = x2 - x1;
+    float ay = y2 - y1;
+    float az = z2 - z1;
+    float bx = x3 - x1;
+    float by = y3 - y1;
+    float bz = z3 - z1;
 
-	float centerX = 0.0, centerY = 0.0f;
-	float angleStep = 2.0f * 3.14159f / segments;
+    // Векторное произведение AB x AC
+    nx = ay * bz - az * by;
+    ny = az * bx - ax * bz;
+    nz = ax * by - ay * bx;
 
-	glBegin(GL_TRIANGLES);
-	for (int i = 0; i < segments; ++i){
-		float angle1 = i * angleStep;
-		float angle2 = (i+1) * angleStep;
-		float x1 = radius * cos(angle1);
-		float y1 = radius * sin(angle1);
-		float x2 = radius * cos(angle2);
-		float y2 = radius * sin(angle2);
-
-		glVertex3f(centerX, centerY, 0.0f);
-		glVertex3f(x1,y1,0.0f);
-		glVertex3f(x2,y2,0.0f);
-	}
-	glEnd();
-
-	glEnable(GL_LIGHTING);
+    // Нормализация
+    float length = sqrt(nx * nx + ny * ny + nz * nz);
+    if (length != 0.0f) {
+        nx /= length;
+        ny /= length;
+        nz /= length;
+    }
 }
 
+void drawCircleTriangles(float radius, int segments, float height) {
+    glBegin(GL_TRIANGLES);
+    
+    // Центральная точка
+    float centerX = 0.0f, centerY = height, centerZ = 0.0f;
 
-void drawCircle(float radius, int segments) {
-    glDisable(GL_LIGHTING);  // Отключаем освещение для круга
-    glColor3f(1.0f, 0.5f, 0.0f);  // Оранжевый цвет круга
+    // Рассчёт углов и треугольников
+    for (int i = 0; i < segments; ++i) {
+        float angle1 = 2.0f * M_PI * i / segments;
+        float angle2 = 2.0f * M_PI * (i + 1) / segments;
 
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0.0f, 0.0f, 0.0f);  // Центральная точка круга
+        // Координаты первой точки на окружности
+        float x1 = radius * cos(angle1);
+        float z1 = radius * sin(angle1);
 
-    for (int i = 0; i <= segments; ++i) {
-        float angle = 2.0f * 3.14159f * i / segments;
-        float x = radius * cos(angle);
-        float y = radius * sin(angle);
-        glVertex3f(x, y, 0.0f);
+        // Координаты второй точки на окружности
+        float x2 = radius * cos(angle2);
+        float z2 = radius * sin(angle2);
+
+        // Верхняя грань
+        // Треугольник 1
+        glNormal3f(0.0f, 1.0f, 0.0f); // Нормаль направлена вверх
+        glVertex3f(centerX, centerY, centerZ); // Центр верхней грани
+        glVertex3f(x1, centerY, z1);           // Первая точка на окружности
+        glVertex3f(x2, centerY, z2);           // Вторая точка на окружности
+    }
+    glEnd();
+}
+
+void drawCylinder(float radius, float height, int segments) {
+    // Боковые грани
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < segments; ++i) {
+        float angle1 = 2.0f * M_PI * i / segments;
+        float angle2 = 2.0f * M_PI * (i + 1) / segments;
+
+        // Координаты первой точки на окружности
+        float x1 = radius * cos(angle1);
+        float z1 = radius * sin(angle1);
+        // Координаты второй точки на окружности
+        float x2 = radius * cos(angle2);
+        float z2 = radius * sin(angle2);
+
+        // Нормаль к грани (векторное произведение)
+        float nx, ny, nz;
+        calculateNormal(x1, 0.0f, z1, 
+                         x1, height, z1, 
+                         x2, height, z2, 
+                         nx, ny, nz);
+        glNormal3f(nx, ny, nz); // Установка нормали
+
+        // Боковые грани
+        // Треугольник 1
+        glVertex3f(x1, 0.0f, z1);  // Низ первой точки
+        glVertex3f(x1, height, z1); // Верх первой точки
+        glVertex3f(x2, height, z2); // Верх второй точки
+
+        // Треугольник 2
+        glVertex3f(x1, 0.0f, z1);   // Низ первой точки
+        glVertex3f(x2, height, z2); // Верх второй точки
+        glVertex3f(x2, 0.0f, z2);   // Низ второй точки
     }
     glEnd();
 
-    glEnable(GL_LIGHTING);  // Включаем освещение обратно
+    // Верхняя грань
+    drawCircleTriangles(radius, segments, height); // Вызов для верхней грани
+
+    // Нижняя грань
+    drawCircleTriangles(radius, segments, 0.0f); // Вызов для нижней грани
 }
 
 void display() {
@@ -101,16 +155,16 @@ void display() {
     // Настройка камеры
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(20.0, 20.0, 20.0,  // Положение камеры ближе к объекту
+    gluLookAt(20.0, 20.0, 20.0,  // Положение камеры
               0.0, 0.0, 0.0,    // Точка, на которую направлена камера
               0.0, 1.0, 0.0);   // Направление "вверх"
 
     // Рисуем оси координат
     drawAxes();
 
-    // Отрисовка круга
+    // Отрисовка цилиндра
     glPushMatrix();
-    drawCircleManualTriangulation(3.0f, 1000000);  // Радиус 3, 50 сегментов
+    drawCylinder(3.0f, 5.0f, 100000); // Радиус 3, высота 5, 30 сегментов
     glPopMatrix();
 
     glutSwapBuffers();  // Переключение буферов для плавной отрисовки
@@ -120,20 +174,18 @@ void reshape(int w, int h) {
     glViewport(0, 0, w, h);  // Установить окно просмотра
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0, (GLfloat)w / (GLfloat)h, 0.1, 500.0);  // Параметры перспективы
+    gluPerspective(45.0, (GLfloat)w / (GLfloat)h, 0.1, 100.0);
+    glMatrixMode(GL_MODELVIEW);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(500, 500);
-    glutCreateWindow("Trapezoid and Circle with Lighting");
-
-    init();  // Инициализация
-
-    glutDisplayFunc(display);  // Функция отображения
-    glutReshapeFunc(reshape);  // Функция изменения размера окна
-
-    glutMainLoop();  // Главный цикл обработки событий
+    glutInitWindowSize(800, 600);
+    glutCreateWindow("Cylinder with Normals");
+    init();
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutMainLoop();
     return 0;
 }
