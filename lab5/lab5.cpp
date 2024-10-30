@@ -16,6 +16,7 @@ float cameraDistance = 20.0f; // Расстояние камеры от цент
 float lightAngleX = 0.0f; // Угол вращения вокруг оси X
 float lightAngleY = 0.0f; // Угол вращения вокруг оси Y
 float height = 5.0f;
+float radius = 3.0f;
 
 void init() {
     glEnable(GL_DEPTH_TEST);  // Включить тест глубины
@@ -190,7 +191,7 @@ void display() {
 	}
     // Отрисовка цилиндра
     glPushMatrix();
-    drawCylinder(3.0f, height, segments); // Радиус 3, высота 5, количество сегментов
+    drawCylinder(radius, height, segments); // Радиус 3, высота 5, количество сегментов
     glPopMatrix();
 
     glutSwapBuffers();  // Переключение буферов для плавной отрисовки
@@ -233,6 +234,14 @@ void keyboard(unsigned char key, int x, int y) {
 			break;
 		case 'f':
 			height = std::max(1.0f,height -1);
+			glutPostRedisplay();
+			break;
+		case 't':
+			radius = radius + 1.0f;
+			glutPostRedisplay();
+			break;
+		case 'g':
+			radius = std::max(1.0f,radius -1);
 			glutPostRedisplay();
 			break;
 		case 'z':
