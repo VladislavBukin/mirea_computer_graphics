@@ -9,6 +9,7 @@
 GLfloat lightDir[] = {0.0f, 0.0f, 1.0f, 0.0f};
 // Глобальные переменные для биндов
 int segments = 30; // Начальное количество сегментов
+bool axes_flag = true;
 float cameraAngleX = 0.0f; // Угол вращения вокруг оси X
 float cameraAngleY = 0.0f; // Угол вращения вокруг оси Y
 float cameraDistance = 20.0f; // Расстояние камеры от центра
@@ -35,6 +36,7 @@ void init() {
 }
 
 void drawAxes() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // Очистить буфер цвета и глубины
     glDisable(GL_LIGHTING);  // Отключаем освещение для осей координат
 
     glBegin(GL_LINES);
@@ -177,13 +179,15 @@ void display() {
         (GLfloat)(10.0f * sin(lightAngleY) * cos(lightAngleX)), // Приведение к GLfloat
         1.0f                                                     // Вектор направления
     };
+
     
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition); // Установка позиции света
 
 	
     // Рисуем оси координат
-    drawAxes();
-
+    if (axes_flag){
+	drawAxes();
+	}
     // Отрисовка цилиндра
     glPushMatrix();
     drawCylinder(3.0f, 5.0f, segments); // Радиус 3, высота 5, количество сегментов
@@ -241,6 +245,9 @@ void keyboard(unsigned char key, int x, int y) {
         case 'l': // Вращение света вправо
             lightAngleY += 0.1f;
             break;
+		case 'c':
+			axes_flag = !axes_flag;
+			break;
 		case 27:
       		exit(0);
     }
