@@ -9,6 +9,11 @@
 GLfloat lightDir[] = {0.0f, 0.0f, 1.0f, 0.0f};
 // Глобальные переменные для биндов
 int segments = 30; // Начальное количество сегментов
+float cameraAngleX = 0.0f; // Угол вращения вокруг оси X
+float cameraAngleY = 0.0f; // Угол вращения вокруг оси Y
+float cameraDistance = 20.0f; // Расстояние камеры от центра
+float lightAngleX = 0.0f; // Угол вращения вокруг оси X
+float lightAngleY = 0.0f; // Угол вращения вокруг оси Y
 
 
 void init() {
@@ -33,22 +38,18 @@ void drawAxes() {
     glDisable(GL_LIGHTING);  // Отключаем освещение для осей координат
 
     glBegin(GL_LINES);
-
     // Ось X (красная)
     glColor3f(1.0f, 0.0f, 0.0f);
     glVertex3f(-10.0f, 0.0f, 0.0f);
     glVertex3f(10.0f, 0.0f, 0.0f);
-
     // Ось Y (зеленая)
     glColor3f(0.0f, 1.0f, 0.0f);
     glVertex3f(0.0f, -10.0f, 0.0f);
     glVertex3f(0.0f, 10.0f, 0.0f);
-
     // Ось Z (синяя)
     glColor3f(0.0f, 0.0f, 1.0f);
     glVertex3f(0.0f, 0.0f, -10.0f);
     glVertex3f(0.0f, 0.0f, 10.0f);
-
     glEnd();
 
     glEnable(GL_LIGHTING);  // Включаем освещение обратно
@@ -161,10 +162,25 @@ void display() {
     // Настройка камеры
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(20.0, 20.0, 20.0,  // Положение камеры
-              0.0, 0.0, 0.0,    // Точка, на которую направлена камера
-              0.0, 1.0, 0.0);   // Направление "вверх"
 
+    // Позиция камеры на основе углов
+    float cameraX = cameraDistance * cos(cameraAngleY) * cos(cameraAngleX);
+    float cameraY = cameraDistance * sin(cameraAngleX);
+    float cameraZ = cameraDistance * sin(cameraAngleY) * cos(cameraAngleX);
+    gluLookAt(cameraX, cameraY, cameraZ,   // Положение камеры
+              0.0, 0.0, 0.0,              // Точка, на которую направлена камера
+              0.0, 1.0, 0.0);             // Направление "вверх"
+
+    GLfloat lightPosition[] = {
+        (GLfloat)(10.0f * cos(lightAngleY) * cos(lightAngleX)), // Приведение к GLfloat
+        (GLfloat)(10.0f * sin(lightAngleX)),                     // Приведение к GLfloat
+        (GLfloat)(10.0f * sin(lightAngleY) * cos(lightAngleX)), // Приведение к GLfloat
+        1.0f                                                     // Вектор направления
+    };
+    
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition); // Установка позиции света
+
+	
     // Рисуем оси координат
     drawAxes();
 
@@ -176,42 +192,70 @@ void display() {
     glutSwapBuffers();  // Переключение буферов для плавной отрисовки
 }
 
-void reshape(int w, int h) {
-    glViewport(0, 0, w, h);  // Установить окно просмотра
+void reshape(int width, int height) {
+    glViewport(0, 0, width, height);  // Установка размера окна
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0, (GLfloat)w / (GLfloat)h, 0.1, 100.0);
-    glMatrixMode(GL_MODELVIEW);
+    gluPerspective(45.0, (float)width / height, 1.0, 100.0); // Установка перспективы
 }
 
-// Функция обработки клавиш
-void keyboard(unsigned char key, int x , int y) {
+void keyboard(unsigned char key, int x, int y) {
 	(void)x;
 	(void)y;
-	switch (key) {
-		case 'q':
-			segments = std::max(3, segments -1);
-			glutPostRedisplay();
+    switch (key) {
+        case 'a': // Влево
+            cameraAngleY -= 0.1f;
+            break;
+        case 'd': // Вправо
+            cameraAngleY += 0.1f;
+            break;
+        case 'w': // Вверх
+            cameraAngleX += 0.1f;
+            break;
+        case 's': // Вниз
+            cameraAngleX -= 0.1f;
+            break;
+	    case 'q':
+    		segments = std::max(3, segments -1);
+      		glutPostRedisplay();
+        	break;
+    	case 'e':
+      		segments++;
+      		glutPostRedisplay();
+      		break;
+		case 'z':
+			cameraDistance = std::max(1.0f, cameraDistance - 1);
 			break;
-		case 'e':
-			segments++;
-			glutPostRedisplay();
+		case 'x':
+			cameraDistance++;
 			break;
+    	case 'i': // Вращение света вверх
+            lightAngleX += 0.1f;
+            break;
+        case 'k': // Вращение света вниз
+            lightAngleX -= 0.1f;
+            break;
+        case 'j': // Вращение света влево
+            lightAngleY -= 0.1f;
+            break;
+        case 'l': // Вращение света вправо
+            lightAngleY += 0.1f;
+            break;
 		case 27:
-			exit(0);
-	}
-	glutPostRedisplay();
+      		exit(0);
+    }
+    glutPostRedisplay(); // Обновление окна
 }
 
-int main(int argc, char **argv) {
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(800, 600);
-    glutCreateWindow("Cylinder with Normals");
-    init();
-    glutDisplayFunc(display);
-    glutReshapeFunc(reshape);
-    glutKeyboardFunc(keyboard);
-	glutMainLoop();
+int main(int argc, char** argv) {
+    glutInit(&argc, argv); // Инициализация GLUT
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // Настройка режима отображения
+    glutInitWindowSize(800, 600); // Размер окна
+    glutCreateWindow("Цилиндр с вращением камеры"); // Создание окна
+    init(); // Инициализация
+    glutDisplayFunc(display); // Установка функции отображения
+    glutReshapeFunc(reshape); // Установка функции изменения размера
+    glutKeyboardFunc(keyboard); // Установка функции обработки клавиатуры
+    glutMainLoop(); // Запуск основного цикла
     return 0;
 }
