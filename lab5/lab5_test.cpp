@@ -97,9 +97,9 @@ void drawCircleTriangles(float radius, int segments, float height, bool upward) 
         // Рассчёт нормали
         float nx, ny, nz;
         if (upward) {
-            calculateNormal(centerX, centerY, centerZ, x1, centerY, z1, x2, centerY, z2, nx, ny, nz);
-        } else {
             calculateNormal(centerX, centerY, centerZ, x2, centerY, z2, x1, centerY, z1, nx, ny, nz);
+        } else {
+            calculateNormal(centerX, centerY, centerZ, x1, centerY, z1, x2, centerY, z2, nx, ny, nz);
         }
         glNormal3f(nx, ny, nz);
 
@@ -147,10 +147,10 @@ void drawCylinder(float radius, float height, int segments) {
     glEnd();
 
     // Верхняя грань
-    drawCircleTriangles(radius, segments, height, false); // Вызов для верхней грани
+    drawCircleTriangles(radius, segments, height, true); // Вызов для верхней грани
 
     // Нижняя грань
-    drawCircleTriangles(radius, segments, 0.0f, true); // Вызов для нижней грани
+    drawCircleTriangles(radius, segments, 0.0f, false); // Вызов для нижней грани
 }
 
 void display() {
@@ -158,7 +158,7 @@ void display() {
 
     // Настройка источника света
     GLfloat lightDir[] = { static_cast<GLfloat>(20.0f * cos(lightAngle)), 
-                           20.0f, 
+                           10.0f, 
                            static_cast<GLfloat>(20.0f * sin(lightAngle)), 
                            0.0f }; // Обновление направления света
     glLightfv(GL_LIGHT0, GL_POSITION, lightDir); // Установка нового положения источника света

@@ -7,6 +7,9 @@
 
 // Направление света
 GLfloat lightDir[] = {0.0f, 0.0f, 1.0f, 0.0f};
+// Глобальные переменные для биндов
+int segments = 30; // Начальное количество сегментов
+
 
 void init() {
     glEnable(GL_DEPTH_TEST);  // Включить тест глубины
@@ -78,7 +81,7 @@ void calculateNormal(float x1, float y1, float z1,
     }
 }
 
-void drawCircleTriangles(float radius, int segments, float height) {
+void drawCircleTriangles(float radius, int segments, float height, bool upward) {
     glBegin(GL_TRIANGLES);
     
     // Центральная точка
@@ -98,9 +101,12 @@ void drawCircleTriangles(float radius, int segments, float height) {
         float z2 = radius * sin(angle2);
 
         // Верхняя грань
-        // Треугольник 1
-        glNormal3f(0.0f, 1.0f, 0.0f); // Нормаль направлена вверх
-        glVertex3f(centerX, centerY, centerZ); // Центр верхней грани
+		if (upward) {
+        	glNormal3f(0.0f, 1.0f, 0.0f); // Нормаль направлена вверх
+		} else {
+			glNormal3f(0.0f,-1.0f,0.0f);  // Нормаль направлена вниз 
+		}
+        glVertex3f(centerX, centerY, centerZ); 
         glVertex3f(x1, centerY, z1);           // Первая точка на окружности
         glVertex3f(x2, centerY, z2);           // Вторая точка на окружности
     }
@@ -143,10 +149,10 @@ void drawCylinder(float radius, float height, int segments) {
     glEnd();
 
     // Верхняя грань
-    drawCircleTriangles(radius, segments, height); // Вызов для верхней грани
+    drawCircleTriangles(radius, segments, height, true); // Вызов для верхней грани
 
     // Нижняя грань
-    drawCircleTriangles(radius, segments, 0.0f); // Вызов для нижней грани
+    drawCircleTriangles(radius, segments, 0.0f, false); // Вызов для нижней грани
 }
 
 void display() {
@@ -164,7 +170,7 @@ void display() {
 
     // Отрисовка цилиндра
     glPushMatrix();
-    drawCylinder(3.0f, 5.0f, 100000); // Радиус 3, высота 5, 30 сегментов
+    drawCylinder(3.0f, 5.0f, segments); // Радиус 3, высота 5, количество сегментов
     glPopMatrix();
 
     glutSwapBuffers();  // Переключение буферов для плавной отрисовки
@@ -178,6 +184,25 @@ void reshape(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
+// Функция обработки клавиш
+void keyboard(unsigned char key, int x , int y) {
+	(void)x;
+	(void)y;
+	switch (key) {
+		case 'q':
+			segments = std::max(3, segments -1);
+			glutPostRedisplay();
+			break;
+		case 'e':
+			segments++;
+			glutPostRedisplay();
+			break;
+		case 27:
+			exit(0);
+	}
+	glutPostRedisplay();
+}
+
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -186,6 +211,7 @@ int main(int argc, char **argv) {
     init();
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
-    glutMainLoop();
+    glutKeyboardFunc(keyboard);
+	glutMainLoop();
     return 0;
 }
