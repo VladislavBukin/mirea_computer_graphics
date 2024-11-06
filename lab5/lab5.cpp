@@ -32,7 +32,6 @@ void init() {
     glEnable(GL_COLOR_MATERIAL);  // Включить цвет материала
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
-    glEnable(GL_NORMALIZE);  // Нормализация векторов нормалей
     glShadeModel(GL_SMOOTH);  // Гладкая интерполяция цвета
 }
 
@@ -43,16 +42,16 @@ void drawAxes() {
     glBegin(GL_LINES);
     // Ось X (красная)
     glColor3f(1.0f, 0.0f, 0.0f);
-    glVertex3f(-10.0f, 0.0f, 0.0f);
-    glVertex3f(10.0f, 0.0f, 0.0f);
+    glVertex3f(-1000.0f, 0.0f, 0.0f);
+    glVertex3f(1000.0f, 0.0f, 0.0f);
     // Ось Y (зеленая)
     glColor3f(0.0f, 1.0f, 0.0f);
-    glVertex3f(0.0f, -10.0f, 0.0f);
-    glVertex3f(0.0f, 10.0f, 0.0f);
+    glVertex3f(0.0f, -1000.0f, 0.0f);
+    glVertex3f(0.0f, 1000.0f, 0.0f);
     // Ось Z (синяя)
     glColor3f(0.0f, 0.0f, 1.0f);
-    glVertex3f(0.0f, 0.0f, -10.0f);
-    glVertex3f(0.0f, 0.0f, 10.0f);
+    glVertex3f(0.0f, 0.0f, -1000.0f);
+    glVertex3f(0.0f, 0.0f, 1000.0f);
     glEnd();
 
     glEnable(GL_LIGHTING);  // Включаем освещение обратно
@@ -250,16 +249,16 @@ void keyboard(unsigned char key, int x, int y) {
 		case 'x':
 			cameraDistance++;
 			break;
-    	case 'i': // Вращение света вверх
+    	case 'i': 
             lightAngleX += 0.1f;
             break;
-        case 'k': // Вращение света вниз
+        case 'k':
             lightAngleX -= 0.1f;
             break;
-        case 'j': // Вращение света влево
+        case 'l':
             lightAngleY -= 0.1f;
             break;
-        case 'l': // Вращение света вправо
+        case 'j':
             lightAngleY += 0.1f;
             break;
 		case 'c':
