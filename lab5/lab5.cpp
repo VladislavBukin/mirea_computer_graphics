@@ -10,13 +10,17 @@ GLfloat lightDir[] = {0.0f, 0.0f, 1.0f, 0.0f};
 // Глобальные переменные для биндов
 int segments = 30; // Начальное количество сегментов
 bool axes_flag = true;
+bool arrow_flag = true;
 float cameraAngleX = 0.0f; // Угол вращения вокруг оси X
 float cameraAngleY = 0.0f; // Угол вращения вокруг оси Y
 float cameraDistance = 20.0f; // Расстояние камеры от центра
 float lightAngleX = 0.0f; // Угол вращения вокруг оси X
 float lightAngleY = 0.0f; // Угол вращения вокруг оси Y
+float lightDirAngleX = 0.0f; // Угол вращения вокруг оси X
+float lightDirAngleY = 0.0f; // Угол вращения вокруг оси Y
 float height = 5.0f;
 float radius = 3.0f;
+
 
 void init() {
     glEnable(GL_DEPTH_TEST);  // Включить тест глубины
@@ -27,7 +31,16 @@ void init() {
     GLfloat lightColor[] = {1.0f, 1.0f, 1.0f, 1.0f};  // Белый свет
     glLightfv(GL_LIGHT0, GL_DIFFUSE, lightColor);
     glLightfv(GL_LIGHT0, GL_SPECULAR, lightColor);
-    glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
+
+    // Настройка прожектора
+    glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 45.0f); // Угол отсечения света прожектора
+    glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 2.0f); // Концентрация света прожектора
+
+    // Позиция и начальное направление света
+    GLfloat lightDir[] = {0.0f, 0.0f, -1.0f}; // Начальное направление света
+    glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, lightDir);
+    GLfloat lightPosition[] = {0.0f, 5.0f, 5.0f, 1.0f}; // Источник света находится над сценой
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     glEnable(GL_COLOR_MATERIAL);  // Включить цвет материала
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
@@ -82,6 +95,53 @@ void calculateNormal(float x1, float y1, float z1,
         ny /= length;
         nz /= length;
     }
+}
+
+void drawArrow(GLfloat lightPosition[], GLfloat lightDirection[]) {
+    glDisable(GL_LIGHTING); // Отключаем освещение для видимости стрелки
+
+    // Координаты конца стрелки
+    GLfloat arrowEnd[3] = {
+        lightPosition[0] + lightDirection[0] * 5.0f, // Длина стрелки - 5.0
+        lightPosition[1] + lightDirection[1] * 5.0f,
+        lightPosition[2] + lightDirection[2] * 5.0f
+    };
+
+    // Рисуем линию-основание стрелки
+    glBegin(GL_LINES);
+    glColor3f(1.0f, 1.0f, 0.0f); // Жёлтый цвет стрелки
+    glVertex3f(lightPosition[0], lightPosition[1], lightPosition[2]);
+    glVertex3f(arrowEnd[0], arrowEnd[1], arrowEnd[2]);
+    glEnd();
+
+    // Рисуем наконечник стрелки (конус)
+    glPushMatrix();
+    glTranslatef(arrowEnd[0], arrowEnd[1], arrowEnd[2]); // Перемещаем в конец стрелки
+
+    // Вычисляем направление и вращаем конус
+    GLfloat dirLength = sqrt(lightDirection[0] * lightDirection[0] +
+                             lightDirection[1] * lightDirection[1] +
+                             lightDirection[2] * lightDirection[2]);
+
+    if (dirLength > 0.0f) {
+        GLfloat normalizedDir[3] = {
+            lightDirection[0] / dirLength,
+            lightDirection[1] / dirLength,
+            lightDirection[2] / dirLength
+        };
+
+        GLfloat angleZ = acos(normalizedDir[2]) * 180.0f / M_PI; // Угол относительно оси Z
+        GLfloat axisX = -normalizedDir[1]; // Ось вращения вокруг X
+        GLfloat axisY = normalizedDir[0];  // Ось вращения вокруг Y
+
+        glRotatef(angleZ, axisX, axisY, 0.0f);
+    }
+
+    glColor3f(1.0f, 0.0f, 0.0f); // Красный цвет наконечника
+    glutSolidCone(0.2, 0.5, 10, 10); // Радиус 0.2, высота 0.5
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING); // Включаем освещение обратно
 }
 
 void drawCircleTriangles(float radius, int segments, float height, bool upward) {
@@ -158,6 +218,13 @@ void drawCylinder(float radius, float height, int segments) {
     drawCircleTriangles(radius, segments, 0.0f, false); // Вызов для нижней грани
 }
 
+void reshape(int width, int height) {
+    glViewport(0, 0, width, height);  // Установка размера окна
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0, (float)width / height, 1.0, 100.0); // Установка перспективы
+}
+
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // Очистить буфер цвета и глубины
 
@@ -173,36 +240,40 @@ void display() {
               0.0, 0.0, 0.0,              // Точка, на которую направлена камера
               0.0, 1.0, 0.0);             // Направление "вверх"
 
+    // Позиция света
     GLfloat lightPosition[] = {
-        (GLfloat)(10.0f * cos(lightAngleY) * cos(lightAngleX)), // Приведение к GLfloat
-        (GLfloat)(10.0f * sin(lightAngleX)),                     // Приведение к GLfloat
-        (GLfloat)(10.0f * sin(lightAngleY) * cos(lightAngleX)), // Приведение к GLfloat
-        1.0f                                                     // Вектор направления
+        (GLfloat)(10.0f * cos(lightAngleY) * cos(lightAngleX)),
+        (GLfloat)(10.0f * sin(lightAngleX)),
+        (GLfloat)(10.0f * sin(lightAngleY) * cos(lightAngleX)),
+        1.0f // Световая точка
     };
 
-    
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition); // Установка позиции света
+    // Динамическое направление света
+    GLfloat dynamicLightDir[] = {
+        (GLfloat)(cos(lightDirAngleY) * cos(lightDirAngleX)),
+        (GLfloat)(sin(lightDirAngleX)),
+        (GLfloat)(sin(lightDirAngleY) * cos(lightDirAngleX))
+    };
 
-	
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition); // Установка позиции света
+    glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, dynamicLightDir); // Установка направления света
+
     // Рисуем оси координат
-    if (axes_flag){
-	drawAxes();
-	}
+    if (axes_flag) {
+        drawAxes();
+    }
+	glColor3f(0.0f,0.0f,1.0f);
     // Отрисовка цилиндра
     glPushMatrix();
     drawCylinder(radius, height, segments); // Радиус 3, высота 5, количество сегментов
     glPopMatrix();
+	
+	if (arrow_flag){
+		drawArrow(lightPosition, dynamicLightDir);
+	}
 
-    glutSwapBuffers();  // Переключение буферов для плавной отрисовки
+	glutSwapBuffers();  // Переключение буферов для плавной отрисовки
 }
-
-void reshape(int width, int height) {
-    glViewport(0, 0, width, height);  // Установка размера окна
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0, (float)width / height, 1.0, 100.0); // Установка перспективы
-}
-
 void keyboard(unsigned char key, int x, int y) {
 	(void)x;
 	(void)y;
@@ -261,8 +332,23 @@ void keyboard(unsigned char key, int x, int y) {
         case 'j':
             lightAngleY += 0.1f;
             break;
+    	case 'y': 
+            lightDirAngleX += 0.1f;
+            break;
+        case 'u':
+            lightDirAngleX -= 0.1f;
+            break;
+        case 'o':
+            lightDirAngleY -= 0.1f;
+            break;
+        case 'p':
+            lightDirAngleY += 0.1f;
+            break;
 		case 'c':
 			axes_flag = !axes_flag;
+			break;
+		case 'v':
+			arrow_flag = !arrow_flag;
 			break;
 		case 27:
       		exit(0);
