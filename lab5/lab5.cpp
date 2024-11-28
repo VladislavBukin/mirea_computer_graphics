@@ -1,5 +1,6 @@
 #include <GL/glut.h>
 #include <cmath>
+#include <cstdio>
 
 /*
     Вариант 16С: треангулировать Цилиндр, настроить свет и отрисовать
@@ -95,6 +96,29 @@ void calculateNormal(float x1, float y1, float z1,
         ny /= length;
         nz /= length;
     }
+}
+
+void renderText(float x, float y, const char* text) {
+    glDisable(GL_LIGHTING);  // Отключаем освещение для текста
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, 800, 0, 600);  // Настройка 2D-координат для окна (800x600)
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glRasterPos2f(x, y);  // Устанавливаем позицию текста
+    for (const char* c = text; *c != '\0'; ++c) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);  // Выводим символ
+    }
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);  // Включаем освещение обратно
 }
 
 void drawArrow(GLfloat lightPosition[], GLfloat lightDirection[]) {
@@ -272,6 +296,9 @@ void display() {
 		drawArrow(lightPosition, dynamicLightDir);
 	}
 
+	char buffer[50];
+	sprintf(buffer, "Segments: %d",segments);
+	renderText(10,580,buffer);
 	glutSwapBuffers();  // Переключение буферов для плавной отрисовки
 }
 void keyboard(unsigned char key, int x, int y) {
